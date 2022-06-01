@@ -23,6 +23,9 @@ function App() {
   const [account, setAccount] = useState(null)
   const [nft, setNFT] = useState({})
   const [marketplace, setMarketplace] = useState({})
+  const [salesOrders, setSalesOrders] = useState([])
+  const [tokenCount, setTokenCount] = useState(0)
+  const [signer, setSigner] = useState()
   // MetaMask Login/Connect
   const web3Handler = async () => {
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -30,7 +33,7 @@ function App() {
     // Get provider from Metamask
     const provider = new ethers.providers.Web3Provider(window.ethereum)
     // Set signer
-    const signer = provider.getSigner()
+    setSigner(provider.getSigner())
 
     window.ethereum.on('chainChanged', (chainId) => {
       window.location.reload();
@@ -69,7 +72,7 @@ function App() {
                 <Home marketplace={marketplace} nft={nft} />
               } />
               <Route path="/create" element={
-                <Create marketplace={marketplace} nft={nft} />
+                <Create marketplace={marketplace} nft={nft} salesOrders = {salesOrders} setSalesOrders = {setSalesOrders} tokenCount = {tokenCount} setTokenCount = {setTokenCount} signer = {signer} />
               } />
               <Route path="/my-listed-items" element={
                 <MyListedItems marketplace={marketplace} nft={nft} account={account} />
