@@ -10,8 +10,8 @@ import MyListedItems from './MyListedItems.js'
 import MyPurchases from './MyPurchases.js'
 import MarketplaceAbi from '../contractsData/Marketplace.json'
 import MarketplaceAddress from '../contractsData/Marketplace-address.json'
-import NFTAbi from '../contractsData/NFT.json'
-import NFTAddress from '../contractsData/NFT-address.json'
+import NFTAbi from '../contractsData/LazyNFT.json'
+import NFTAddress from '../contractsData/LazyNFT-address.json'
 import { useState } from 'react'
 import { ethers } from "ethers"
 import { Spinner } from 'react-bootstrap'
@@ -25,7 +25,7 @@ function App() {
   const [marketplace, setMarketplace] = useState({})
   const [salesOrders, setSalesOrders] = useState([])
   const [tokenCount, setTokenCount] = useState(0)
-  const [signer, setSigner] = useState()
+  const [signerState, setSignerState] = useState()
   // MetaMask Login/Connect
   const web3Handler = async () => {
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -33,7 +33,7 @@ function App() {
     // Get provider from Metamask
     const provider = new ethers.providers.Web3Provider(window.ethereum)
     // Set signer
-    setSigner(provider.getSigner())
+    const signer = provider.getSigner()
 
     window.ethereum.on('chainChanged', (chainId) => {
       window.location.reload();
@@ -52,6 +52,7 @@ function App() {
     const nft = new ethers.Contract(NFTAddress.address, NFTAbi.abi, signer)
     setNFT(nft)
     setLoading(false)
+    setSignerState(signer)
   }
 
   return (
@@ -61,7 +62,7 @@ function App() {
           <Navigation web3Handler={web3Handler} account={account} />
         </>
         <div>
-          {loading ? (
+          {(loading || !signerState) ? (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
               <Spinner animation="border" style={{ display: 'flex' }} />
               <p className='mx-3 my-0'>Awaiting Metamask Connection...</p>
@@ -72,7 +73,7 @@ function App() {
                 <Home marketplace={marketplace} nft={nft} />
               } />
               <Route path="/create" element={
-                <Create marketplace={marketplace} nft={nft} salesOrders = {salesOrders} setSalesOrders = {setSalesOrders} tokenCount = {tokenCount} setTokenCount = {setTokenCount} signer = {signer} />
+                <Create marketplace={marketplace} nft={nft} salesOrders = {salesOrders} setSalesOrders = {setSalesOrders} tokenCount = {tokenCount} setTokenCount = {setTokenCount} signer = {signerState} />
               } />
               <Route path="/my-listed-items" element={
                 <MyListedItems marketplace={marketplace} nft={nft} account={account} />

@@ -6,14 +6,14 @@ async function main() {
 
   
   // Get the ContractFactories and Signers here.
-  const NFT = await ethers.getContractFactory("NFT");
+  const NFT = await ethers.getContractFactory("LazyNFT");
   const Marketplace = await ethers.getContractFactory("Marketplace");
   // deploy contracts
   const marketplace = await Marketplace.deploy(1);
-  const nft = await NFT.deploy();
+  const nft = await NFT.deploy("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
   // Save copies of each contracts abi and address to the frontend.
   saveFrontendFiles(marketplace , "Marketplace");
-  saveFrontendFiles(nft , "NFT");
+  saveFrontendFiles(nft , "LazyNFT");
 }
 
 function saveFrontendFiles(contract, name) {

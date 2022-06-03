@@ -1,11 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ethers, Signer } from "ethers"
 import { Row, Form, Button } from 'react-bootstrap'
 import { create as ipfsHttpClient } from 'ipfs-http-client'
 import { LazyMinter } from './LazyMinter'
+
 const client = ipfsHttpClient('https://ipfs.infura.io:5001/api/v0')
 
-const Create = ({ marketplace, nft, tokenCount, setTokenCount, salesOrders, storeSalesOrders, signer }) => {
+const Create = ({ marketplace, nft, tokenCount, setTokenCount, salesOrders, setSalesOrders, signer }) => {
+  useEffect(()=>{
+    console.log(salesOrders)
+  }, [salesOrders])
   const [image, setImage] = useState('')
   const [price, setPrice] = useState(null)
   const [name, setName] = useState('')
@@ -19,7 +23,7 @@ const Create = ({ marketplace, nft, tokenCount, setTokenCount, salesOrders, stor
         console.log(result)
         setImage(`https://ipfs.infura.io/ipfs/${result.path}`)
       } catch (error){
-        console.log("ipfs image upload error: ", error)
+        console.table("ipfs image upload error: ", error)
       }
     }
   }
@@ -28,15 +32,46 @@ const Create = ({ marketplace, nft, tokenCount, setTokenCount, salesOrders, stor
     try{
       const result = await client.add(JSON.stringify({image, price, name, description}))
       // mintThenList(result)
+      storeSalesOrder(result)
     } catch(error) {
       console.log("ipfs uri upload error: ", error)
     }
   }
-  const storeSalesOrder = (result) => {
-    const lazyminter = new LazyMinter('0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512', signer)
+  const storeSalesOrder = async (result) => {
+    const addr = await signer.getAddress()
+    console.log(addr)
     const uri = `https://ipfs.infura.io/ipfs/${result.path}`
-    const salesOrder = lazyminter.createVoucher(tokenCount, uri)
-    storeSalesOrders((prev) => [...prev, salesOrder])
+    const tokenID = tokenCount
+    const nftData = {tokenID,price, uri}
+    const signature = await signer._signTypedData(
+      {
+        name: 'LAZY2',
+        version: '1.0',
+        chainId: await signer.getChainId(),
+        verifyingContract: nft.address,
+      },
+      {
+        SignedNFTData: [
+          {name: 'tokenID', type: 'uint256'},
+          {name: 'price', type: 'uint256'},
+          {name: 'uri', type: 'string'},
+        ]
+      },
+      nftData
+    );
+    setSalesOrders((prev) => [...prev, {nftData, signature}])
+    setTokenCount((prev) => prev + 1)
+  }
+
+  const mintNFT = async()=>{
+    console.log('buy')
+    const lastIndex = salesOrders.length - 1;
+    const nftData = salesOrders[lastIndex].nftData
+    const signature = salesOrders[lastIndex].signature
+    console.log(nftData)
+    console.log(signature)
+    const verified = await nft.connect(signer).lazyMintNFT(nftData, signature, {value : nftData.price})
+    console.log(verified)
   }
   // const mintThenList = async (result) => {
   //   const uri = `https://ipfs.infura.io/ipfs/${result.path}`
@@ -52,6 +87,9 @@ const Create = ({ marketplace, nft, tokenCount, setTokenCount, salesOrders, stor
   // }
   return (
     <div className="container-fluid mt-5">
+      <button onClick={mintNFT}>
+      buy NFT
+      </button>
       <div className="row">
         <main role="main" className="col-lg-12 mx-auto" style={{ maxWidth: '1000px' }}>
           <div className="content mx-auto">
@@ -64,7 +102,7 @@ const Create = ({ marketplace, nft, tokenCount, setTokenCount, salesOrders, stor
               />
               <Form.Control onChange={(e) => setName(e.target.value)} size="lg" required type="text" placeholder="Name" />
               <Form.Control onChange={(e) => setDescription(e.target.value)} size="lg" required as="textarea" placeholder="Description" />
-              <Form.Control onChange={(e) => setPrice(e.target.value)} size="lg" required type="number" placeholder="Price in ETH" />
+              <Form.Control onChange={(e) => setPrice(ethers.utils.parseEther(e.target.value))} size="lg" required type="number" placeholder="Price in ETH" />
               <div className="d-grid px-0">
                 <Button onClick={createNFT} variant="primary" size="lg">
                   Create & List NFT!
