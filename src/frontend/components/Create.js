@@ -42,7 +42,9 @@ const Create = ({ marketplace, nft, tokenCount, setTokenCount, salesOrders, setS
     console.log(addr)
     const uri = `https://ipfs.infura.io/ipfs/${result.path}`
     const tokenID = tokenCount
-    const nftData = {tokenID,price, uri}
+    const creator = await signer.getAddress()
+    const nftData = {tokenID,price, uri, creator}
+    console.log(nftData)
     const signature = await signer._signTypedData(
       {
         name: 'LAZY2',
@@ -55,6 +57,7 @@ const Create = ({ marketplace, nft, tokenCount, setTokenCount, salesOrders, setS
           {name: 'tokenID', type: 'uint256'},
           {name: 'price', type: 'uint256'},
           {name: 'uri', type: 'string'},
+          {name: 'creator', type : 'address'},
         ]
       },
       nftData
@@ -70,8 +73,7 @@ const Create = ({ marketplace, nft, tokenCount, setTokenCount, salesOrders, setS
     const signature = salesOrders[lastIndex].signature
     console.log(nftData)
     console.log(signature)
-    const verified = await nft.connect(signer).lazyMintNFT(nftData, signature, {value : nftData.price})
-    console.log(verified)
+    const tokenID = await nft.connect(signer).lazyMintNFT(nftData, signature, {value : nftData.price})
   }
   // const mintThenList = async (result) => {
   //   const uri = `https://ipfs.infura.io/ipfs/${result.path}`
