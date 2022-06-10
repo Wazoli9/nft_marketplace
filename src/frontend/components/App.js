@@ -10,8 +10,12 @@ import MyListedItems from './MyListedItems.js'
 import MyPurchases from './MyPurchases.js'
 import MarketplaceAbi from '../contractsData/Marketplace.json'
 import MarketplaceAddress from '../contractsData/Marketplace-address.json'
-import NFTAbi from '../contractsData/LazyNFT.json'
-import NFTAddress from '../contractsData/LazyNFT-address.json'
+import NFTCollection1Abi from '../contractsData/NFTCollection1.json'
+import NFTCollection1Address from '../contractsData/NFTCollection1-address.json'
+// import NFTAbi from '../contractsData/LazyNFT.json'
+// import NFTAddress from '../contractsData/LazyNFT-address.json'
+import NFTAbi from '../contractsData/NFTCollection1.json'
+import NFTAddress from '../contractsData/NFTCollection1-address.json'
 import { useState } from 'react'
 import { ethers } from "ethers"
 import { Spinner } from 'react-bootstrap'
@@ -70,7 +74,7 @@ function App() {
           ) : (
             <Routes>
               <Route path="/" element={
-                <Home marketplace={marketplace} nft={nft} />
+                <Home signer = {signerState} salesOrders = {salesOrders} marketplace={marketplace} nft={nft} setSalesOrders = {setSalesOrders} />
               } />
               <Route path="/create" element={
                 <Create marketplace={marketplace} nft={nft} salesOrders = {salesOrders} setSalesOrders = {setSalesOrders} tokenCount = {tokenCount} setTokenCount = {setTokenCount} signer = {signerState} />

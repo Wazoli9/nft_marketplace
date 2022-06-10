@@ -1,3 +1,5 @@
+const { ethers } = require("hardhat");
+
 async function main() {
   const [deployer] = await ethers.getSigners();
 
@@ -5,15 +7,19 @@ async function main() {
   console.log("Account balance:", (await deployer.getBalance()).toString());
 
   
-  // Get the ContractFactories and Signers here.
-  const NFT = await ethers.getContractFactory("LazyNFT");
   const Marketplace = await ethers.getContractFactory("Marketplace");
   // deploy contracts
   const marketplace = await Marketplace.deploy(1);
+  
+  // Get the ContractFactories and Signers here.
+  const NFT = await ethers.getContractFactory("LazyNFT");
   const nft = await NFT.deploy();
+  const NftCollection1 = await ethers.getContractFactory("NFTCollection1")
+  const nftCollection1 = await NftCollection1.deploy(marketplace.address) 
   // Save copies of each contracts abi and address to the frontend.
   saveFrontendFiles(marketplace , "Marketplace");
   saveFrontendFiles(nft , "LazyNFT");
+  saveFrontendFiles(nftCollection1 , "NFTCollection1");
 }
 
 function saveFrontendFiles(contract, name) {

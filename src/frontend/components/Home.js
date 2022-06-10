@@ -2,31 +2,70 @@ import { useState, useEffect } from 'react'
 import { ethers } from "ethers"
 import { Row, Col, Card, Button } from 'react-bootstrap'
 
-const Home = ({ marketplace, nft }) => {
+const Home = ({ marketplace, nft, salesOrders, signer, setSalesOrders }) => {
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState([])
+  // const loadMarketplaceItems = async () => {
+  //   // Load all unsold items
+  //   const itemCount = await marketplace.itemCount()
+  //   let items = []
+  //   for (let i = 1; i <= itemCount; i++) {
+  //     const item = await marketplace.items(i)
+  //     if (!item.sold) {
+  //       // get uri url from nft contract
+  //       const uri = await nft.tokenURI(item.tokenId)
+  //       // use uri to fetch the nft metadata stored on ipfs 
+  //       const response = await fetch(uri)
+  //       const metadata = await response.json()
+  //       // get total price of item (item price + fee)
+  //       const totalPrice = await marketplace.getTotalPrice(item.itemId)
+  //       // Add item to items array
+  //       items.push({
+  //         totalPrice,
+  //         itemId: item.itemId,
+  //         seller: item.seller,
+  //         name: metadata.name,
+  //         description: metadata.description,
+  //         image: metadata.image
+  //       })
+  //     }
+  //   }
+  //   setLoading(false)
+  //   setItems(items)
+  // }
+
+  const mintNFT = async(data, salesIndex)=>{
+    console.log('buy')
+    const nftData = data.nftData
+    const signature = data.signature
+    console.log(nftData)
+    console.log(signature)
+    console.log(nft.address)
+    const tokenID = await marketplace.connect(signer).lazyMintNFT(nftData, signature, nft.address, {value : nftData.price})
+    let newSales = [...salesOrders]
+    newSales[salesIndex].sold = true
+    setSalesOrders(newSales)
+  }
+
   const loadMarketplaceItems = async () => {
+    console.log(salesOrders)
     // Load all unsold items
-    const itemCount = await marketplace.itemCount()
+    const itemCount = salesOrders.length
+    const signerAddr = await signer.getAddress()
     let items = []
-    for (let i = 1; i <= itemCount; i++) {
-      const item = await marketplace.items(i)
-      if (!item.sold) {
-        // get uri url from nft contract
-        const uri = await nft.tokenURI(item.tokenId)
-        // use uri to fetch the nft metadata stored on ipfs 
-        const response = await fetch(uri)
-        const metadata = await response.json()
-        // get total price of item (item price + fee)
-        const totalPrice = await marketplace.getTotalPrice(item.itemId)
-        // Add item to items array
+    for (let i = 0; i < itemCount; i++) {
+      const item = salesOrders[i].nftData
+      console.log(item)
+      let res = await fetch(item.uri)
+      let uri = await res.json()
+      if (!(item.creator == signerAddr) && (salesOrders[i].sold == false)) {
         items.push({
-          totalPrice,
-          itemId: item.itemId,
-          seller: item.seller,
-          name: metadata.name,
-          description: metadata.description,
-          image: metadata.image
+          totalPrice : item.price,
+          itemId: item.tokenID,
+          seller: item.creator,
+          image: uri.image,
+          data : salesOrders[i],
+          index : i
         })
       }
     }
@@ -41,7 +80,8 @@ const Home = ({ marketplace, nft }) => {
 
   useEffect(() => {
     loadMarketplaceItems()
-  }, [])
+  }, [signer, salesOrders])
+
   if (loading) return (
     <main style={{ padding: "1rem 0" }}>
       <h2>Loading...</h2>
@@ -55,16 +95,16 @@ const Home = ({ marketplace, nft }) => {
             {items.map((item, idx) => (
               <Col key={idx} className="overflow-hidden">
                 <Card>
-                  <Card.Img variant="top" src={item.image} />
+                  <Card.Img variant="top" src={item.image} alt = {item.uri} />
                   <Card.Body color="secondary">
-                    <Card.Title>{item.name}</Card.Title>
+                    <Card.Title>{item.tokenID}</Card.Title>
                     <Card.Text>
-                      {item.description}
+                      {item.tokenID}
                     </Card.Text>
                   </Card.Body>
                   <Card.Footer>
                     <div className='d-grid'>
-                      <Button onClick={() => buyMarketItem(item)} variant="primary" size="lg">
+                      <Button onClick={() => mintNFT(item.data, item.index)} variant="primary" size="lg">
                         Buy for {ethers.utils.formatEther(item.totalPrice)} ETH
                       </Button>
                     </div>
